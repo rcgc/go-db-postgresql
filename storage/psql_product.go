@@ -3,7 +3,13 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+
+	"github.com/rcgc/go-db-postgresql/pkg/product"
 )
+
+type scanner interface {
+	Scan(dest ...interface{}) error
+}
 
 const (
 	psqlMigrateProduct = `CREATE TABLE IF NOT EXISTS products(
@@ -15,6 +21,12 @@ const (
 		updated_at TIMESTAMP,
 		CONSTRAINT products_id_pk PRIMARY KEY (id)
 	)`
+	psqlCreateProduct = `INSERT INTO products(name, observations, price, 
+		created_at) VALUES($1, $2, $3, $4) RETURNING id`
+	psqlGetAllProduct = `SELECT id, name, observations, price,
+	created_at, updated_at
+	FROM products`
+	psqlGetProductByID = psqlGetAllProduct + " WHERE id = $1"
 )
 
 // PsqlProduct used for work with postgres - product
@@ -42,4 +54,90 @@ func (p *PsqlProduct) Migrate() error {
 
 	fmt.Println("Migración de producto ejecutada correctamente")
 	return nil
+}
+
+// Create implement the interface product.Storage
+func (p *PsqlProduct) Create(m *product.Model) error {
+	stmt, err := p.db.Prepare(psqlCreateProduct)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	err = stmt.QueryRow(
+		m.Name,
+		stringToNull(m.Observations),
+		m.Price,
+		m.CreatedAt,
+	).Scan(&m.ID)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("Se creó el producto correctamente")
+	return nil
+}
+
+// GetAll implement the interface product.Storage
+func (p *PsqlProduct) GetAll() (product.Models, error){
+	stmt, err := p.db.Prepare(psqlGetAllProduct)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query()
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	ms := make(product.Models, 0)
+	for rows.Next() {
+		m, err := scanRowProduct(rows)
+		if err != nil {
+			return nil, err
+		}
+		ms = append(ms, m)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return ms, nil
+}
+
+// GetByID implement the interface product.Storage
+func (p *PsqlProduct) GetByID(id uint) (*product.Model, error){
+	stmt, err := p.db.Prepare(psqlGetProductByID)
+	if err != nil {
+		return &product.Model{}, err
+	}
+	defer stmt.Close()
+
+	return scanRowProduct(stmt.QueryRow(id))
+}
+
+func scanRowProduct(s scanner) (*product.Model, error) {
+	m := &product.Model{}
+		observationNull := sql.NullString{}
+		updatedAtNull := sql.NullTime{}
+
+		err := s.Scan(
+			&m.ID,
+			&m.Name,
+			&observationNull,
+			&m.Price,
+			&m.CreatedAt,
+			&updatedAtNull,
+		)
+		if err != nil {
+			return &product.Model{}, err
+		}
+
+		m.Observations = observationNull.String
+		m.UpdatedAt = updatedAtNull.Time
+
+		return m, nil
 }
