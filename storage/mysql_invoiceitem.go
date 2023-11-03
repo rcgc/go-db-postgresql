@@ -3,6 +3,8 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+
+	"github.com/rcgc/go-db-postgresql/pkg/invoiceitem"
 )
 
 const (
@@ -19,6 +21,8 @@ const (
 		(product_id) REFERENCES products (id) ON UPDATE
 		RESTRICT ON DELETE RESTRICT
 	)`
+	mySQLCreateInvoiceItem = `INSERT INTO invoice_items(invoice_header_id,
+	product_id) VALUES(?, ?)`
 )
 
 // MySQLInvoiceItem used for work with mySQL - invoiceHeader
@@ -45,5 +49,30 @@ func (p *MySQLInvoiceItem) Migrate() error {
 	}
 
 	fmt.Println("Migración de invoiceItem ejecutada correctamente")
+	return nil
+}
+
+// CreateTx implement the interface invoiceitem.Storage
+func (p *MySQLInvoiceItem) CreateTx(tx *sql.Tx, headerID uint, ms invoiceitem.Models) error {
+	stmt, err := tx.Prepare(mySQLCreateInvoiceItem)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, item := range ms {
+		result, err := stmt.Exec(headerID, item.ProductID)
+		if err != nil {
+			return err
+		}
+
+		id, err := result.LastInsertId()
+		if err != nil {
+			return err
+		}
+		
+		item.ID = uint(id)
+	}
+
 	return nil
 }

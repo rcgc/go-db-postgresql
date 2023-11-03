@@ -33,17 +33,17 @@ const (
 )
 
 // PsqlProduct used for work with postgres - product
-type PsqlProduct struct {
+type psqlProduct struct {
 	db *sql.DB
 }
 
 // NewPsqlProduct return a new pointer of PsqlProduct
-func NewPsqlProduct(db *sql.DB) *PsqlProduct {
-	return &PsqlProduct{db}
+func newPsqlProduct(db *sql.DB) *psqlProduct {
+	return &psqlProduct{db}
 }
 
 // Migrate implement the interface product.Storage
-func (p *PsqlProduct) Migrate() error {
+func (p *psqlProduct) Migrate() error {
 	stmt, err := p.db.Prepare(psqlMigrateProduct)
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func (p *PsqlProduct) Migrate() error {
 }
 
 // Create implement the interface product.Storage
-func (p *PsqlProduct) Create(m *product.Model) error {
+func (p *psqlProduct) Create(m *product.Model) error {
 	stmt, err := p.db.Prepare(psqlCreateProduct)
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func (p *PsqlProduct) Create(m *product.Model) error {
 }
 
 // GetAll implement the interface product.Storage
-func (p *PsqlProduct) GetAll() (product.Models, error){
+func (p *psqlProduct) GetAll() (product.Models, error){
 	stmt, err := p.db.Prepare(psqlGetAllProduct)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (p *PsqlProduct) GetAll() (product.Models, error){
 }
 
 // GetByID implement the interface product.Storage
-func (p *PsqlProduct) GetByID(id uint) (*product.Model, error){
+func (p *psqlProduct) GetByID(id uint) (*product.Model, error){
 	stmt, err := p.db.Prepare(psqlGetProductByID)
 	if err != nil {
 		return &product.Model{}, err
@@ -123,7 +123,7 @@ func (p *PsqlProduct) GetByID(id uint) (*product.Model, error){
 }
 
 // Update implement the interface product.Storage
-func (p *PsqlProduct) Update(m *product.Model) error {
+func (p *psqlProduct) Update(m *product.Model) error {
 	stmt, err := p.db.Prepare(psqlUpdateProduct)
 	if err != nil {
 		return err
@@ -155,7 +155,7 @@ func (p *PsqlProduct) Update(m *product.Model) error {
 }
 
 // Delete implement the interface product.Storage
-func (p *PsqlProduct) Delete(id uint) error {
+func (p *psqlProduct) Delete(id uint) error {
 	stmt, err := p.db.Prepare(psqlDeleteProduct)
 	if err != nil {
 		return err

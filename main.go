@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/rcgc/go-db-postgresql/pkg/product"
@@ -8,8 +9,48 @@ import (
 )
 
 func main() {
-	storage.NewMySQLDB()
+	driver := storage.MySQL
 
+	storage.New(driver)
+
+	myStorage, err := storage.DAOProduct(driver)
+	if err != nil {
+		log.Fatalf("DAOProduct: %v", err)
+	}
+
+	serviceProduct := product.NewService(myStorage)
+
+	ms, err := serviceProduct.GetAll()
+	if err != nil {
+		log.Fatalf("product.GetAll: %v", err)
+	}
+
+	fmt.Println(ms)
+	/*
+	storageHeader := storage.NewMySQLInvoiceHeader(storage.Pool())
+	storageItems := storage.NewMySQLInvoiceItem(storage.Pool())
+	storageInvoice := storage.NewMySQLInvoice(
+		storage.Pool(),
+		storageHeader,
+		storageItems,
+	)
+
+	m := &invoice.Model{
+		Header: &invoiceheader.Model{
+			Client: "Roberto Guzmán",
+		},
+		Items: invoiceitem.Models{
+			&invoiceitem.Model{ProductID: 1},
+			&invoiceitem.Model{ProductID: 2},
+		},
+	}
+
+	serviceInvoice := invoice.NewService(storageInvoice)
+	if err := serviceInvoice.Create(m); err != nil {
+		log.Fatalf("invoice.Create: %v", err)
+	}
+	*/
+	/*
 	storageProduct := storage.NewMySQLProduct(storage.Pool())
 	serviceProduct := product.NewService(storageProduct)
 
@@ -17,6 +58,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("product.Delete: %v", err)
 	}
+	*/
 	/*
 	storageProduct := storage.NewMySQLProduct(storage.Pool())
 	serviceProduct := product.NewService(storageProduct)
